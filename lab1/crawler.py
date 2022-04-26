@@ -12,7 +12,7 @@ class Crawler:
         self.initial_url = initial_url
         self.default_url = re.search(r"(?:.+?(?=/)){3}", initial_url).group()
         self.url_queue = deque()
-        self.visited_urls = {}
+        self.visited_urls = set()
 
         self.RESULTS_PATH = "lab1/results"
 
@@ -29,27 +29,27 @@ class Crawler:
         return internal_urls | external_urls
 
     def retrive_content(self, text):
-        pattern = re.compile(r"<.*?>")
-        return pattern.sub("", text)
+        return re.findall(r"(?:\s*<.*?>)*(.*?)\s*(?:<.*?>\s*)", text)
 
     def run(self) -> None:
         self.url_queue.append(self.initial_url)
 
-        # Create an initial csv file
-
         i = 0
 
-        while i < 1:
-            makedirs(path.join(self.RESULTS_PATH, f"layer{i}"))
+        while self.url_queue or i < self.depth:
+            makedirs(path.join(self.RESULTS_PATH, f"layer{i}"), exist_ok=True)
             with open(
                 path.join(self.RESULTS_PATH, f"layer{i}", f"content{i}.csv"),
                 mode="w+",
+                newline="",
             ) as csv_content_file, open(
-                path.join(self.RESULTS_PATH, f"layer{i}", f"emails{i}.csv"), mode="w+"
+                path.join(self.RESULTS_PATH, f"layer{i}", f"emails{i}.csv"),
+                mode="w+",
+                newline="",
             ) as csv_email_file:
                 # Init content writer
                 content_writer = csv.DictWriter(
-                    csv_content_file, delimiter="`", fieldnames=["URL", "Content"]
+                    csv_content_file, delimiter="|", fieldnames=["URL", "Content"]
                 )
 
                 # Add the headers
@@ -57,25 +57,44 @@ class Crawler:
 
                 # Init email writer
                 email_writer = csv.DictWriter(
-                    csv_email_file, delimiter="`", fieldnames=["URL", "Emails"]
+                    csv_email_file, delimiter="|", fieldnames=["URL", "Emails"]
                 )
 
                 # Add the headers
                 email_writer.writeheader()
 
-                # Start crawling
-                current_url = self.url_queue.pop()
-                req = requests.get(current_url)
-                original_content = req.text
+                urls_buffer = set()
 
-                emails = self.retrive_emails(original_content)
-                urls = self.retrive_urls(original_content)
-                content = self.retrive_content(original_content)
+                while self.url_queue:
+                    # Pop the first in queue url
+                    current_url = self.url_queue.pop()
 
-                content_writer.writerow({"URL": current_url, "Content": content})
-                email_writer.writerow({"URL": current_url, "Emails": " ".join(emails)})
+                    # Get the html content
+                    req = requests.get(current_url)
+                    original_content = req.text
+
+                    # Retrive necessary data
+                    emails = self.retrive_emails(original_content)
+                    urls = self.retrive_urls(original_content)
+                    content = self.retrive_content(original_content)
+
+                    urls_buffer = urls_buffer | urls
+
+                    # Save extracted data
+                    content_writer.writerow(
+                        {"URL": current_url, "Content": " ".join(content)}
+                    )
+                    email_writer.writerow(
+                        {"URL": current_url, "Emails": " ".join(emails)}
+                    )
+
+                    # Add to visited urls
+                    self.visited_urls.add(current_url)
+
+                for url in urls_buffer:
+                    self.url_queue.appendleft(url)
+
+                i += 1
 
                 csv_content_file.close()
                 csv_email_file.close()
-
-            i += 1

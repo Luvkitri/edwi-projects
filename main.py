@@ -2,7 +2,7 @@ from lab1.crawler import Crawler
 
 
 def main():
-    crawler = Crawler("https://p.lodz.pl/en/about-tul/contact")
+    crawler = Crawler("https://sopython.com/canon/97/writing-csv-adds-blank-lines-between-rows/")
     crawler.run()
 
 
