@@ -1,5 +1,4 @@
 import csv
-import email
 import re
 import requests
 
@@ -7,16 +6,6 @@ import requests
 from os import path, makedirs
 from collections import deque
 from datetime import datetime
-
-"""TODO
-    relative paths with / or without
-    DONE: ignore writing ro if no mail found for given url
-    PASS: write email for given url one by one? maybe
-    DONE: Request filtering content-type text/html, request timeout would be nice, ignore 400 and 500 requests, request head (just to check if those are gucci)
-    DONE: Ignore scripts and styles etc (mainly body)
-    more info in queue
-    DONE: indexing
-"""
 
 
 class Crawler:
@@ -59,7 +48,9 @@ class Crawler:
 
         return content
 
-    def pretty_print(self, req=None, error=False, error_message="", additional_info="", url=""):
+    def pretty_print(
+        self, req=None, error=False, error_message="", additional_info="", url=""
+    ):
         if error:
             if req != None:
                 print(
@@ -89,7 +80,7 @@ class Crawler:
                     additional_info,
                 )
             )
-            
+
         print()
 
     def run(self) -> None:
@@ -110,7 +101,9 @@ class Crawler:
             ) as csv_email_file:
                 # Init content writer
                 content_writer = csv.DictWriter(
-                    csv_content_file, delimiter="|", fieldnames=["index", "URL", "Content"]
+                    csv_content_file,
+                    delimiter="|",
+                    fieldnames=["index", "URL", "Content"],
                 )
 
                 # Add the headers
@@ -125,30 +118,26 @@ class Crawler:
                 email_writer.writeheader()
 
                 urls_buffer = set()
-                
+
                 email_index = 0
                 content_index = 0
 
                 while self.url_queue:
                     # Pop the first in queue url
                     current_url = self.url_queue.pop()
-                    
+
                     try:
                         # Get request head
                         req_head = requests.head(current_url, timeout=10)
                         req_head.raise_for_status()
                     except requests.exceptions.Timeout:
                         self.pretty_print(
-                            error=True,
-                            error_message="Request timeout",
-                            url=current_url
+                            error=True, error_message="Request timeout", url=current_url
                         )
                         continue
                     except requests.exceptions.TooManyRedirects:
                         self.pretty_print(
-                            error=True,
-                            error_message="Incorrect URL",
-                            url=current_url
+                            error=True, error_message="Incorrect URL", url=current_url
                         )
                         continue
                     except requests.exceptions.HTTPError:
@@ -160,9 +149,7 @@ class Crawler:
                         continue
                     except requests.exceptions.RequestException as e:
                         self.pretty_print(
-                            error=True,
-                            error_message="Wrong url",
-                            url=current_url
+                            error=True, error_message="Wrong url", url=current_url
                         )
                         raise SystemExit(e)
 
@@ -208,13 +195,21 @@ class Crawler:
                     # Save extracted data
                     if content:
                         content_writer.writerow(
-                            {"index": content_index, "URL": current_url, "Content": content}
+                            {
+                                "index": content_index,
+                                "URL": current_url,
+                                "Content": content,
+                            }
                         )
                         content_index += 1
 
                     if emails:
                         email_writer.writerow(
-                            {"index": email_index, "URL": current_url, "Emails": " ".join(emails)}
+                            {
+                                "index": email_index,
+                                "URL": current_url,
+                                "Emails": " ".join(emails),
+                            }
                         )
                         email_index += 1
 
