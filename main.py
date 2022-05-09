@@ -1,35 +1,62 @@
+import json
 import sys
 
 
-from os import path, listdir
+from os import path, listdir, getcwd
 from lab1.crawler import Crawler
+from lab2.indexer import Indexer
+
+
+def word_finder():
+    with open("invertedIndex.json") as inverted_index_file:
+        data = json.load(inverted_index_file)
+
+        while True:
+            search_word = input("Search for word: ")
+
+            if search_word in data["inverted_index"]:
+                for key, value in data["inverted_index"][search_word].items():
+                    url = data["urls"][key]
+                    print(
+                        f"URL {url}\nNumber of occurrences: {len(value)}\nPositions: {value}\n"
+                    )
 
 
 def main(argv):
+    # https://www.atomicheritage.org/profile/j-robert-oppenheimer 2
+
     # ! Lab 1
-    # url = ''
-    # depth = 100
+    url = ""
+    depth = 100
 
-    # try:
-    #     if len(argv) == 2:
-    #         url = argv[0]
-    #         depth = argv[1]
-    #     elif len(argv) == 1:
-    #         url = argv[0]
-    #     else:
-    #         raise Exception('No url provided')
+    try:
+        if len(argv) == 2:
+            url = argv[0]
+            depth = argv[1]
+        elif len(argv) == 1:
+            url = argv[0]
+        else:
+            raise Exception("No url provided")
 
-    #     crawler = Crawler(url, int(depth))
-    #     crawler.run()
-    # except Exception as error:
-    #     print(repr(error))
+        crawler = Crawler(url, int(depth))
+        crawler.run()
+    except Exception as error:
+        print(repr(error))
 
     # ! Lab 2
+    abs_path = path.abspath(getcwd())
+    content_path = path.join(abs_path, "lab1/results")
+
+    print(content_path)
 
     # Get all the results dirs
-    results_dirs = [d for d in listdir("./lab1/results") if path.isdir(d)]
-    
-    
+    results_dirs = [path.join(content_path, d) for d in listdir(content_path)]
+    latest_results_dir = max(results_dirs, key=path.getmtime)
+
+    indexer = Indexer(latest_results_dir)
+    indexer.run()
+
+    word_finder()
 
 
 if __name__ == "__main__":
