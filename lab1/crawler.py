@@ -6,10 +6,14 @@ import requests
 from os import path, makedirs
 from collections import deque
 from datetime import datetime
+from urllib.parse import urlparse
 
 
 class Crawler:
     def __init__(self, initial_url: str, depth: int) -> None:
+        if not self.is_url(initial_url):
+            raise Exception("Wrong url")
+
         self.initial_url = initial_url
         self.depth = depth
         self.default_url = re.search(r"(?:.+?(?=/)){3}", initial_url).group()
@@ -22,6 +26,13 @@ class Crawler:
         self.RESULTS_PATH = f"{default_path}-{current_date}"
 
         makedirs(self.RESULTS_PATH)
+
+    def is_url(self, url: str):
+        try:
+            result = urlparse(url)
+            return all([result.scheme, result.netloc])
+        except ValueError:
+            return False
 
     def retrive_emails(self, text):
         # ?<= non-capturing group - match what precedes mailto:
@@ -149,9 +160,9 @@ class Crawler:
                         continue
                     except requests.exceptions.RequestException as e:
                         self.pretty_print(
-                            error=True, error_message="Wrong url", url=current_url
+                            error=True, error_message=str(e), url=current_url
                         )
-                        raise SystemExit(e)
+                        continue
 
                     if "Content-Type" in req_head.headers:
                         if "text/html" not in req_head.headers["Content-Type"]:

@@ -26,22 +26,22 @@ def main(argv):
     # https://www.atomicheritage.org/profile/j-robert-oppenheimer 2
 
     # ! Lab 1
-    url = ""
-    depth = 100
+    # url = ""
+    # depth = 100
 
-    try:
-        if len(argv) == 2:
-            url = argv[0]
-            depth = argv[1]
-        elif len(argv) == 1:
-            url = argv[0]
-        else:
-            raise Exception("No url provided")
-
-        crawler = Crawler(url, int(depth))
-        crawler.run()
-    except Exception as error:
-        print(repr(error))
+    # try:
+    #     if len(argv) == 2:
+    #         url = argv[0]
+    #         depth = argv[1]
+    #     elif len(argv) == 1:
+    #         url = argv[0]
+    #     else:
+    #         raise Exception("No url provided")
+        
+    #     crawler = Crawler(url, int(depth))
+    #     crawler.run()
+    # except Exception as error:
+    #     print(repr(error))
 
     # ! Lab 2
     abs_path = path.abspath(getcwd())
@@ -56,7 +56,7 @@ def main(argv):
     indexer = Indexer(latest_results_dir)
     indexer.run()
 
-    word_finder()
+    # word_finder()
 
 
 if __name__ == "__main__":

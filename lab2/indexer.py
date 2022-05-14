@@ -8,10 +8,10 @@ from os import path, listdir
 class Indexer:
     def __init__(self, source_dir: str) -> None:
         self.source_dir = source_dir
-        self.layers_dirs = [d for d in listdir(source_dir)]
+        self.layers_dirs = sorted([d for d in listdir(source_dir)])
 
     def clear_content(self, content):
-        cleared_content = re.findall(r"[a-zA-Z0-9]+", content)
+        cleared_content = re.findall(r"[a-zA-Z]+", content)
         return [word.lower() for word in cleared_content]
 
     def run(self):
