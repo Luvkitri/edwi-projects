@@ -22,28 +22,26 @@ def word_finder():
                     )
 
 
-def main(argv):
-    # https://www.atomicheritage.org/profile/j-robert-oppenheimer 2
+def lab1(argv):
+    url = ""
+    depth = 100
 
-    # ! Lab 1
-    # url = ""
-    # depth = 100
+    try:
+        if len(argv) == 2:
+            url = argv[0]
+            depth = argv[1]
+        elif len(argv) == 1:
+            url = argv[0]
+        else:
+            raise Exception("No url provided")
 
-    # try:
-    #     if len(argv) == 2:
-    #         url = argv[0]
-    #         depth = argv[1]
-    #     elif len(argv) == 1:
-    #         url = argv[0]
-    #     else:
-    #         raise Exception("No url provided")
-        
-    #     crawler = Crawler(url, int(depth))
-    #     crawler.run()
-    # except Exception as error:
-    #     print(repr(error))
+        crawler = Crawler(url, int(depth))
+        crawler.run()
+    except Exception as error:
+        print(repr(error))
 
-    # ! Lab 2
+
+def lab2():
     abs_path = path.abspath(getcwd())
     content_path = path.join(abs_path, "lab1/results")
 
@@ -56,7 +54,18 @@ def main(argv):
     indexer = Indexer(latest_results_dir)
     indexer.run()
 
-    # word_finder()
+
+def main(argv):
+    # https://en.wikipedia.org/wiki/Mazda_MX-5 2
+
+    # ! Lab 1
+    lab1(argv)
+
+    # ! Lab 2
+    lab2()
+
+    # Pseudo word finder
+    word_finder()
 
 
 if __name__ == "__main__":
