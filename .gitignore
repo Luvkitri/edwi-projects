@@ -4,3 +4,4 @@ invertedIndex.json
 *.zip
 .venv
 .DS_Store
+*grams.json

@@ -1,8 +1,11 @@
 import csv
 import re
 import json
+import sys
 
 from os import path, listdir
+
+csv.field_size_limit(sys.maxsize)
 
 
 class Indexer:
@@ -17,7 +20,7 @@ class Indexer:
     def run(self):
         output = {}
         output["urls"] = {}
-        output["inverted_index"] = {}
+        output["invertedIndex"] = {}
 
         index_offset = 0
 
@@ -46,14 +49,14 @@ class Indexer:
 
                     # Word position versions
                     for index, word in enumerate(content_words):
-                        if word in output["inverted_index"]:
-                            if url_index in output["inverted_index"][word]:
-                                output["inverted_index"][word][url_index].append(index)
+                        if word in output["invertedIndex"]:
+                            if url_index in output["invertedIndex"][word]:
+                                output["invertedIndex"][word][url_index].append(index)
                             else:
-                                output["inverted_index"][word][url_index] = [index]
+                                output["invertedIndex"][word][url_index] = [index]
                         else:
-                            output["inverted_index"][word] = {}
-                            output["inverted_index"][word][url_index] = [index]
+                            output["invertedIndex"][word] = {}
+                            output["invertedIndex"][word][url_index] = [index]
 
                 index_offset += url_index
 
