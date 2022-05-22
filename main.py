@@ -1,6 +1,5 @@
 import json
 import sys
-import csv
 
 
 from os import path, listdir, getcwd
@@ -69,14 +68,15 @@ def lab3():
     latest_results_dir = max(results_dirs, key=path.getmtime)
 
     n_gram_generator = NGramGenerator(latest_results_dir, 2)
-    n_gram_generator.run()
+    output = n_gram_generator.run()
+    print(output)
 
 
 def main(argv):
     # https://en.wikipedia.org/wiki/Mazda_MX-5 2
 
     # ! Lab 1
-    # lab1(argv)
+    lab1(argv)
 
     # ! Lab 2
     # lab2()
@@ -85,7 +85,7 @@ def main(argv):
     # word_finder()
 
     # ! lab 3
-    lab3()
+    # lab3()
 
 
 if __name__ == "__main__":

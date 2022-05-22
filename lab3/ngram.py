@@ -1,7 +1,7 @@
 import csv
 import re
 import json
-import sys
+import numpy as np
 
 from os import path, listdir
 
@@ -17,14 +17,10 @@ class NGramGenerator:
         return [word.lower() for word in cleared_content]
 
     def split_to_ngrams(self, content):
-        n_grams = {}
+        n_grams = set()
 
         for i in range((len(content) - self.n + 1)):
-            n_gram = tuple(content[i : i + self.n])
-            if n_gram in n_grams:
-                n_grams[n_gram] += 1
-            else:
-                n_grams[n_gram] = 1
+            n_grams.add(tuple(content[i : i + self.n]))
 
         return n_grams
 
@@ -44,15 +40,11 @@ class NGramGenerator:
                     _id = int(row["index"])
                     output[row["URL"]] = {}
                     output[row["URL"]]["id"] = _id + index_offset
+                    
                     content = self.clear_content(row["Content"])
-
                     n_grams = self.split_to_ngrams(content)
-                    output[row["URL"]]["ngrams"] = n_grams
-
-                    for key, value in n_grams.items():
-                        output["ngrams"][_id].append(
-                            {"ngram": list(key), "count": value}
-                        )
+                    
+                    output[row["URL"]]["ngrams"] = [' '.join(n_gram) for n_gram in n_grams]
 
                 index_offset += _id
 

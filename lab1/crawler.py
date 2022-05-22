@@ -48,7 +48,7 @@ class Crawler:
 
     def retrive_content(self, text):
         p = re.compile(
-            r"(<script.*?>[\S\s]*?</script>)|(<style.*?>[\S\s]*?</style>)|(<[\S\s]*?>)|(&nbsp;)"
+            r"(<script.*?>[\S\s]*?</script>)|(<style.*?>[\S\s]*?</style>)|(<[\S\s]*?>)|(&nbsp;)|[|]"
         )
 
         # Remove tags
@@ -56,6 +56,10 @@ class Crawler:
 
         # Remove unnecessary spaces
         content = re.sub("\s\s+", " ", content)
+        
+        # Remove new lines
+        content = re.sub("\n", " ", content)
+        print(content)
 
         return content
 
@@ -191,6 +195,14 @@ class Crawler:
                                 additional_info=req_head.headers["content-type"],
                             )
                             continue
+                        
+                    if req_head.status_code == 204:
+                        self.pretty_print(
+                            req_head,
+                            error=True,
+                            error_message="Bad status code",
+                        )
+                        continue
 
                     req = requests.get(current_url, timeout=10)
 
