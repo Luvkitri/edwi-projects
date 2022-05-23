@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 
 
 class Crawler:
-    def __init__(self, initial_url: str, depth: int) -> None:
+    def __init__(self, initial_url: str, depth: int, default_path = "lab1/results/results") -> None:
         if not self.is_url(initial_url):
             raise Exception("Wrong url")
 
@@ -20,7 +20,6 @@ class Crawler:
         self.url_queue = deque()
         self.visited_urls = set()
 
-        default_path = "lab1/results/results"
         current_date = datetime.today().strftime("%Y-%m-%dT%H:%M:%S.%f%z")
 
         self.RESULTS_PATH = f"{default_path}-{current_date}"
@@ -59,7 +58,6 @@ class Crawler:
         
         # Remove new lines
         content = re.sub("\n", " ", content)
-        print(content)
 
         return content
 

@@ -5,7 +5,7 @@ import sys
 from os import path, listdir, getcwd
 from lab1.crawler import Crawler
 from lab2.indexer import Indexer
-from lab3.ngram import NGramGenerator
+from lab3.ngram import NGramGenerator, NGramComparator
 
 
 def word_finder():
@@ -46,8 +46,6 @@ def lab2():
     abs_path = path.abspath(getcwd())
     content_path = path.join(abs_path, "lab1/results")
 
-    print(content_path)
-
     # Get all the results dirs
     results_dirs = [path.join(content_path, d) for d in listdir(content_path)]
     latest_results_dir = max(results_dirs, key=path.getmtime)
@@ -57,26 +55,26 @@ def lab2():
     
 
 
-def lab3():
+def lab3_generator():
     abs_path = path.abspath(getcwd())
     content_path = path.join(abs_path, "lab1/results")
-
-    print(content_path)
 
     # Get all the results dirs
     results_dirs = [path.join(content_path, d) for d in listdir(content_path)]
     latest_results_dir = max(results_dirs, key=path.getmtime)
 
     n_gram_generator = NGramGenerator(latest_results_dir, 2)
-    output = n_gram_generator.run()
-    print(output)
-
+    n_gram_generator.run()
+    
+def lab3_comparator():
+    comparator = NGramComparator('https://en.wikipedia.org/wiki/Mazda', 1)
+    comparator.run()
 
 def main(argv):
     # https://en.wikipedia.org/wiki/Mazda_MX-5 2
 
     # ! Lab 1
-    lab1(argv)
+    # lab1(argv)
 
     # ! Lab 2
     # lab2()
@@ -85,7 +83,7 @@ def main(argv):
     # word_finder()
 
     # ! lab 3
-    # lab3()
+    lab3_generator()
 
 
 if __name__ == "__main__":
