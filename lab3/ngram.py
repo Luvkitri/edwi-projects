@@ -32,6 +32,9 @@ class NGramGenerator:
 
         return n_grams
 
+    def vectorize_ngrams(self):
+        pass
+
     def run(self):
         output = {}
 
@@ -58,7 +61,7 @@ class NGramGenerator:
                         output[row["URL"]][f"{n}-grams"] = combined_n_grams
 
                         if self.vectorize:
-                            self.master_ngrams[f"{n}-grams"] |= set(combined_n_grams)
+                            self.master_ngrams[f"{n}-grams"].update(combined_n_grams)
 
                 index_offset += _id
 
@@ -74,7 +77,7 @@ class NGramGenerator:
                         else:
                             vector.append(0)
 
-                    output[url][f"{n}-grams-vector"] = vector
+                    output[url][f"{i}-grams-vector"] = vector
 
         with open(f"{self.output_file_name}.json", "w+") as output_file:
             json.dump(output, output_file, indent=4)
@@ -82,6 +85,10 @@ class NGramGenerator:
 
         if self.vectorize:
             with open(f"master-ngrams.json", "w+") as master_ngrams_file:
+                for i in range(1, self.n + 1):
+                    self.master_ngrams[f"{n}-grams"] = list(
+                        self.master_ngrams[f"{n}-grams"]
+                    )
                 json.dump(self.master_ngrams, master_ngrams_file, indent=4)
                 master_ngrams_file.close()
 
@@ -101,9 +108,13 @@ class NGramComparator:
         self.output_file_name = "ngrams-comparator"
         self.source_file_name = source_file_name
         self.n = n
-
-        self.jacard_distances = {}
-        self.cos_distances = {}
+        self.master_ngrams = {"1-grams": set(), "2-grams": set(), "3-grams": set()}
+        self.jacard_distances = {
+            "1-grams": dict(),
+            "2-grams": dict(),
+            "3-grams": dict(),
+        }
+        self.cos_distances = {"1-grams": dict(), "2-grams": dict(), "3-grams": dict()}
 
     def clear_content(self, content):
         cleared_content = re.findall(r"[a-zA-Z]+", content)
@@ -134,37 +145,51 @@ class NGramComparator:
     def cos_distance(self, first_vector, second_vector):
         a = np.array(first_vector)
         b = np.array(second_vector)
-        return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+        return np.dot(a, b) / ((np.dot(a, a) ** 0.5) * (np.dot(b, b) ** 0.5))
 
-    def top_jacard(self, n):
-        with open("jacard_distance.json", mode="r") as jacard_file:
-            distances = json.load(jacard_file)
-            sorted_distances = sorted(
-                distances[f"{n}-grams"], key=lambda d: d.get, reverse=True
-            )
-            jacard_file.close()
+    def top_jacard(self, top: int):
+        for i in range(1, self.n + 1):
+            for index, (key, value) in enumerate(
+                self.jacard_distances[f"{i}-grams"].items()
+            ):
+                if index == top:
+                    return
 
-        return sorted_distances
+                print(f"{key} - {value}")
 
-    def top_cos(self, n):
-        with open("cos_distance.json", mode="r") as cos_file:
-            distances = json.load(cos_file)
-            sorted_distances = sorted(
-                distances[f"{n}-grams"], key=lambda d: d.get, reverse=True
-            )
-            cos_file.close()
+    def top_cos(self, top: int):
+        for i in range(1, self.n + 1):
+            for index, (key, value) in enumerate(
+                self.cos_distances[f"{i}-grams"].items()
+            ):
+                if index == top:
+                    return
+                
+                print(f"{key} - {value}")
 
-        return sorted_distances
+    def get_master_ngrams(self):
+        with open(f"{self.source_file_name}.json", mode="r") as ngrams_file:
+            source = json.load(ngrams_file)
+
+            for key in source:
+                for i in range(1, self.n + 1):
+                    self.master_ngrams[f"{i}-grams"].update(source[key][f"{i}-grams"])
+
+            ngrams_file.close()
+
+    def read_master_ngrams(self):
+        with open(f"{self.source_file_name}.json", mode="r") as ngrams_file:
+            self.master_ngrams = json.load(ngrams_file)
+            ngrams_file.close()
 
     def run(self):
         # Save the url data to compare
+        print("Fetching source data")
         self.fetch_data()
+        print("Creating ngrams")
         self.create_ngrams()
-
-        if self.master_ngrams == None:
-            with open(f"master-ngrams.json", mode="r") as master_ngrams_file:
-                self.master_ngrams = json.load(master_ngrams_file)
-                master_ngrams_file.close()
+        print("Retrieving master ngrams")
+        self.get_master_ngrams()
 
         with open(f"{self.output_file_name}.json", mode="r") as ngrams_file:
             data = json.load(ngrams_file)
@@ -177,12 +202,12 @@ class NGramComparator:
                         else:
                             vector.append(0)
 
-                    data[key]["1-grams-vector"] = vector
+                    data[key][f"{i}-grams-vector"] = vector
 
             ngrams_file.close()
 
-        with open(f"{self.source_file_name}.json", mode="r") as source_ngrams:
-            source = json.load(source_ngrams)
+        with open(f"{self.source_file_name}.json", mode="r") as source_ngrams_file:
+            source = json.load(source_ngrams_file)
 
             for url in source:
                 for i in range(1, self.n + 1):
@@ -198,7 +223,23 @@ class NGramComparator:
                         source_vector, input_vector
                     )
 
-            source_ngram.close()
+            source_ngrams_file.close()
+
+        for i in range(1, self.n + 1):
+            self.jacard_distances[f"{i}-grams"] = dict(
+                sorted(
+                    self.jacard_distances[f"{i}-grams"].items(),
+                    key=lambda x: x[1],
+                    reverse=True,
+                )
+            )
+            self.cos_distances[f"{i}-grams"] = dict(
+                sorted(
+                    self.cos_distances[f"{i}-grams"].items(),
+                    key=lambda x: x[1],
+                    reverse=True,
+                )
+            )
 
         with open("jacard_distance.json", mode="w+") as jacard_file:
             json.dump(self.jacard_distances, jacard_file, indent=4)
