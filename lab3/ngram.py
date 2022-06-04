@@ -32,9 +32,6 @@ class NGramGenerator:
 
         return n_grams
 
-    def vectorize_ngrams(self):
-        pass
-
     def run(self):
         output = {}
 
@@ -143,9 +140,13 @@ class NGramComparator:
         )
 
     def cos_distance(self, first_vector, second_vector):
+        if len(first_vector) != len(second_vector):
+            return 0
+            
         a = np.array(first_vector)
         b = np.array(second_vector)
         return np.dot(a, b) / ((np.dot(a, a) ** 0.5) * (np.dot(b, b) ** 0.5))
+        
 
     def top_jacard(self, top: int):
         for i in range(1, self.n + 1):

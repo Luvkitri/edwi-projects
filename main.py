@@ -92,27 +92,27 @@ def main(argv):
     # word_finder()
 
     # ! lab 3
-    # lab3()
+    lab3()
 
-    db_controller = DBController()
-    db_controller.create_connection()
-    db_controller.create_table(
-        """
-                            CREATE TABLE IF NOT EXISTS scrap (
-                                id INTEGER PRIMARY KEY,
-                                domain TEXT NOT NULL,
-                                url TEXT NOT NULL,
-                                text TEXT NOT NULL,
-                                bow TEXT,
-                                tfidf TEXT
-                            );
-        """
-    )
+    # db_controller = DBController()
+    # db_controller.create_connection()
+    # db_controller.create_table(
+    #     """
+    #                         CREATE TABLE IF NOT EXISTS scrap (
+    #                             id INTEGER PRIMARY KEY,
+    #                             domain TEXT NOT NULL,
+    #                             url TEXT NOT NULL,
+    #                             text TEXT NOT NULL,
+    #                             bow TEXT,
+    #                             tfidf TEXT
+    #                         );
+    #     """
+    # )
 
-    urls = ["realpython.com", "ft.com", "pcgamer.com", "dnd.wizards.com", "espn.com"]
+    # urls = ["realpython.com", "ft.com", "pcgamer.com", "dnd.wizards.com", "espn.com"]
 
-    scrapper = Scrapper(urls=urls, number_of_sub_pages=100, db_controller=db_controller)
-    scrapper.scrap()
+    # scrapper = Scrapper(urls=urls, number_of_sub_pages=100, db_controller=db_controller)
+    # scrapper.scrap()
 
 
 if __name__ == "__main__":
