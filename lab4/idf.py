@@ -50,8 +50,8 @@ class DBController:
         self.connection.commit()
         self.connection.execute("VACUUM")
 
-    def update_columns_by_id(self, _id: int, columns):
-        sql = f"UPDATE scrap SET {'=?, '.join(columns.keys())}=? where id=?"
+    def update_columns_by_id(self, _id: int, table_name: str, columns):
+        sql = f"UPDATE {table_name} SET {'=?, '.join(columns.keys())}=? where id=?"
 
         cursor = self.connection.cursor()
         cursor.execute(sql, (*columns.values(), _id))
@@ -60,8 +60,8 @@ class DBController:
 
         cursor.close()
 
-    def select_row_by_id(self, _id: int, columns=["*"]):
-        sql = f"SELECT {', '.join(columns)} FROM scrap WHERE id=?"
+    def select_row_by_id(self, _id: int, table_name: str, columns=["*"]):
+        sql = f"SELECT {', '.join(columns)} FROM {table_name} WHERE id=?"
 
         cursor = self.connection.cursor()
         cursor.execute(sql, (_id,))
@@ -98,12 +98,13 @@ class DBController:
 
 class Scrapper:
     def __init__(
-        self, urls: list, number_of_sub_pages: int, db_controller: DBController
+        self, urls: list, number_of_sub_pages: int, db_controller: DBController, table_name
     ) -> None:
         self.urls = urls
         self.number_of_sub_pages = number_of_sub_pages
         self.db_controller = db_controller
         self.bag_of_words = set()
+        self.table_name = table_name
 
     def retrieve_inner_urls(self, text, domain: str):
         relative_paths = set(re.findall(r"(?<=href=\")(?:/).+?(?=\")", text))
@@ -244,11 +245,11 @@ class Scrapper:
         return words
 
     def save_bow(self):
-        with open("bag_of_words.json", mode="w+") as bow_file:
+        with open(f"bag-of-words-{self.table_name}.json", mode="w+") as bow_file:
             json.dump(list(self.bag_of_words), bow_file, indent=4)
 
     def scrap(self):
-        self.db_controller.clear_table("scrap")
+        self.db_controller.clear_table(self.table_name)
 
         url_queue = deque()
         total_visited_pages = set()
@@ -278,7 +279,7 @@ class Scrapper:
                         url_queue.appendleft(url)
 
                 self.db_controller.insert_row(
-                    "scrap",
+                    self.table_name,
                     {
                         "domain": domain,
                         "url": current_url,
@@ -297,12 +298,13 @@ class Scrapper:
 
 
 class Vectorizer:
-    def __init__(self, db_controller: DBController) -> None:
+    def __init__(self, db_controller: DBController, table_name) -> None:
         self.get_bow()
         self.db_controller = db_controller
+        self.table_name = table_name
 
     def get_bow(self):
-        with open("bag_of_words.json", mode="r") as bow_file:
+        with open("bag-of-words-scrap.json", mode="r") as bow_file:
             self.bag_of_words = json.load(bow_file)
 
     def generate_bow_vector(self, document_words):
@@ -335,7 +337,7 @@ class Vectorizer:
 
         for _id in document_ids:
             document_bow = eval(
-                self.db_controller.select_row_by_id(*_id, columns=["bow"])[0]
+                self.db_controller.select_row_by_id(*_id, self.table_name, columns=["bow"])[0]
             )
 
             for word, value in zip(self.bag_of_words, document_bow):
@@ -361,18 +363,14 @@ class Vectorizer:
         # Generate bow and tf vectors
         for _id in document_ids:
             document_words = eval(
-                self.db_controller.select_row_by_id(*_id, columns=["words"])[0]
+                self.db_controller.select_row_by_id(*_id, self.table_name, columns=["words"])[0]
             )
-            document_bow_vector = self.generate_bow_vector(document_words)
-            document_tf_dict = self.generate_tf_dict(
-                document_bow_vector, document_words
-            )
-            
+            document_bow_vector = self.generate_bow_vector(document_words)            
             document_tf_vector = self.generate_tf_vector(document_bow_vector, document_words)
-            
 
             self.db_controller.update_columns_by_id(
                 *_id,
+                self.table_name,
                 columns={
                     "bow": str(document_bow_vector),
                     "tf": str(document_tf_vector),
@@ -383,12 +381,14 @@ class Vectorizer:
 
         for _id in document_ids:
             document_tf_vector = eval(
-                self.db_controller.select_row_by_id(*_id, columns=["tf"])[0]
+                self.db_controller.select_row_by_id(*_id, self.table_name, columns=["tf"])[0]
             )
 
             tf_idf_vector = self.generate_tf_idf_vector(document_tf_vector)
 
             self.db_controller.update_columns_by_id(
                 *_id,
+                self.table_name,
                 columns={"tfidf": str(tf_idf_vector)},
             )
+            

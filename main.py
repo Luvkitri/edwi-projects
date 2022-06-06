@@ -1,14 +1,53 @@
 import json
 import sys
+import numpy as np
 
 
 from os import path, listdir, getcwd
 
-from numpy import vectorize
 from lab1.crawler import Crawler
 from lab2.indexer import Indexer
 from lab3.ngram import NGramGenerator, NGramComparator
 from lab4.idf import DBController, Scrapper, Vectorizer
+
+
+def jacard_distance(first_set, second_set):
+    return float(
+        len(first_set.intersection(second_set)) / len(first_set.union(second_set))
+    )
+
+
+def cos_distance(first_vector, second_vector):
+    if len(first_vector) != len(second_vector):
+        return 0
+
+    a = np.array(first_vector)
+    b = np.array(second_vector)
+    return np.dot(a, b) / ((np.dot(a, a) ** 0.5) * (np.dot(b, b) ** 0.5))
+
+
+def compare(db_controller: DBController, _id: int):
+    document_ids = db_controller.select_ids()
+    selected_doc_tf_idf = eval(
+        db_controller.select_row_by_id(_id, "scrap", columns=["tfidf"])[0]
+    )
+
+    jacard_distances = {}
+    cos_distances = {}
+
+    for _id in document_ids:
+        row = db_controller.select_row_by_id(*_id, "scrap", columns=["url", "tfidf"])
+        url = row[0]
+        tf_idf = eval(row[1])
+
+        # jacard_distances[url] = jacard_distance(selected_doc_tf_idf, tf_idf)
+        cos_distances[url] = cos_distance(selected_doc_tf_idf, tf_idf)
+        
+    with open("lab4-jacard-distances.json", mode="w+") as jacard_file:
+        json.dump(jacard_distances, jacard_file, indent=4)
+        
+    with open("lab4-cos-distances.json", mode="w+") as cos_file:
+        json.dump(cos_distances, cos_file, indent=4) 
 
 
 def word_finder():
@@ -120,14 +159,47 @@ def main(argv):
         """
     )
 
+    db_controller.create_table(
+        """
+                            CREATE TABLE IF NOT EXISTS compare (
+                                id INTEGER PRIMARY KEY,
+                                domain TEXT NOT NULL,
+                                url TEXT NOT NULL,
+                                text TEXT NOT NULL,
+                                words TEXT NOT NULL,
+                                bow TEXT,
+                                tf TEXT,
+                                tfidf TEXT
+                            );
+        """
+    )
+
     urls = ["realpython.com", "ft.com", "pcgamer.com", "dnd.wizards.com", "espn.com"]
 
-    scrapper = Scrapper(urls=urls, number_of_sub_pages=5, db_controller=db_controller)
+    scrapper = Scrapper(
+        urls=urls,
+        number_of_sub_pages=5,
+        db_controller=db_controller,
+        table_name="scrap",
+    )
     scrapper.scrap()
-    
-    vectorizer = Vectorizer(db_controller=db_controller)
+
+    vectorizer = Vectorizer(db_controller=db_controller, table_name="scrap")
     vectorizer.generate()
     
+    compare(db_controller, 1)
+
+    # compare_scrapper = Scrapper(
+    #     urls=["python.org"],
+    #     number_of_sub_pages=1,
+    #     db_controller=db_controller,
+    #     table_name="compare",
+    # )
+    # compare_scrapper.scrap()
+
+    # vectorizer = Vectorizer(db_controller=db_controller, table_name="scrap")
+    # vectorizer.generate()
+
     db_controller.close_connection()
 
 
