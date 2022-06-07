@@ -9,12 +9,19 @@ from lab1.crawler import Crawler
 from lab2.indexer import Indexer
 from lab3.ngram import NGramGenerator, NGramComparator
 from lab4.idf import DBController, Scrapper, Vectorizer
+from lab6.bot import send_form
 
 
-def jacard_distance(first_set, second_set):
-    return float(
-        len(first_set.intersection(second_set)) / len(first_set.union(second_set))
-    )
+def jacard_distance(first_vector, second_vector):
+    jacc_num = 0 
+    jacc_den = 0 
+    
+    for first_value, second_value in zip(first_vector, second_vector):
+        if first_value != 0 or second_value != 0:
+            jacc_den += max(first_value, second_value) 
+            jacc_num += min(first_value, second_value) 
+            
+    return jacc_num / jacc_den 
 
 
 def cos_distance(first_vector, second_vector):
@@ -40,7 +47,7 @@ def compare(db_controller: DBController, _id: int):
         url = row[0]
         tf_idf = eval(row[1])
 
-        # jacard_distances[url] = jacard_distance(selected_doc_tf_idf, tf_idf)
+        jacard_distances[url] = jacard_distance(selected_doc_tf_idf, tf_idf)
         cos_distances[url] = cos_distance(selected_doc_tf_idf, tf_idf)
         
     with open("lab4-jacard-distances.json", mode="w+") as jacard_file:
@@ -122,25 +129,8 @@ def lab3():
     comparator.run()
     comparator.top_jacard(3)
     comparator.top_cos(3)
-
-
-def main(argv):
-    # https://en.wikipedia.org/wiki/Mazda_MX-5 2
-
-    # 5m 29s
-    # ! Lab 1
-    # lab1(argv)
-
-    # 10s
-    # ! Lab 2
-    # lab2()
-
-    # Pseudo word finder
-    # word_finder()
-
-    # ! lab 3
-    # lab3()
-
+    
+def lab4():
     db_controller = DBController()
     db_controller.create_connection()
     db_controller.drop_table(table_name="scrap")
@@ -159,26 +149,11 @@ def main(argv):
         """
     )
 
-    db_controller.create_table(
-        """
-                            CREATE TABLE IF NOT EXISTS compare (
-                                id INTEGER PRIMARY KEY,
-                                domain TEXT NOT NULL,
-                                url TEXT NOT NULL,
-                                text TEXT NOT NULL,
-                                words TEXT NOT NULL,
-                                bow TEXT,
-                                tf TEXT,
-                                tfidf TEXT
-                            );
-        """
-    )
-
     urls = ["realpython.com", "ft.com", "pcgamer.com", "dnd.wizards.com", "espn.com"]
 
     scrapper = Scrapper(
         urls=urls,
-        number_of_sub_pages=5,
+        number_of_sub_pages=100,
         db_controller=db_controller,
         table_name="scrap",
     )
@@ -189,18 +164,36 @@ def main(argv):
     
     compare(db_controller, 1)
 
-    # compare_scrapper = Scrapper(
-    #     urls=["python.org"],
-    #     number_of_sub_pages=1,
-    #     db_controller=db_controller,
-    #     table_name="compare",
-    # )
-    # compare_scrapper.scrap()
-
-    # vectorizer = Vectorizer(db_controller=db_controller, table_name="scrap")
-    # vectorizer.generate()
-
     db_controller.close_connection()
+    
+def lab6():
+    send_form()
+
+
+def main(argv):
+    # https://en.wikipedia.org/wiki/Mazda_MX-5 2
+
+    # 5m 29s
+    # ! Lab 1
+    # lab1(argv)
+
+    # 10s
+    # ! Lab 2
+    # lab2()
+
+    # Pseudo word finder
+    # word_finder()
+
+    # ! Lab 3
+    # lab3()
+    
+    # ! Lab 4
+    # lab4()
+    
+    # ! Lab 6
+    lab6()
+
+    
 
 
 if __name__ == "__main__":
