@@ -8,6 +8,9 @@ authors = ["Jan Jędrzejewski <janjedrzejewski@gmail.com>"]
 python = "^3.10"
 requests = "^2.27.1"
 numpy = "^1.22.3"
+Flask = "^2.1.2"
+selenium = "^4.2.0"
+webdriver-manager = "^3.7.0"
 
 [tool.poetry.dev-dependencies]
 black = "^22.3.0"

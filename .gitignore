@@ -4,5 +4,16 @@ invertedIndex.json
 *.zip
 .venv
 .DS_Store
+*distance.json
+*distances.json
+*comparator.json
+*mazda.json
 *grams.json
+bag_of_words.json
 lab3/source
+lab3/*.pdf
+lab4/*.pdf
+data.db
+geckodriver.log
+*scrap.json
+*compare.json
