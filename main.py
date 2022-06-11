@@ -123,8 +123,8 @@ def lab3():
     comparator = NGramComparator(
         "https://en.wikipedia.org/wiki/Mazda",
         1,
-        3,
-        "3-grams-mazda",
+        2,
+        "2-grams-mazda",
     )
     comparator.run()
     comparator.top_jacard(3)
