@@ -98,13 +98,30 @@ class DBController:
 
 class Scrapper:
     def __init__(
-        self, urls: list, number_of_sub_pages: int, db_controller: DBController, table_name
+        self,
+        urls: list,
+        number_of_sub_pages: int,
+        db_controller: DBController,
+        table_name,
     ) -> None:
         self.urls = urls
         self.number_of_sub_pages = number_of_sub_pages
         self.db_controller = db_controller
         self.bag_of_words = set()
         self.table_name = table_name
+
+    def retrieve_disallowed_paths(self):
+        self.disallowed_paths = {}
+        for url in self.urls:
+            req = requests.get(f"https://{url}/robots.txt", timeout=10)
+
+            rules = req.text
+
+            disallowed_paths_match = re.findall(r"^(?:Disallow: )(.+)$", rules, re.M)
+            self.disallowed_paths[url] = [
+                f"https://{url}{disallowed_path.replace('*', '')}"
+                for disallowed_path in disallowed_paths_match
+            ]
 
     def retrieve_inner_urls(self, text, domain: str):
         relative_paths = set(re.findall(r"(?<=href=\")(?:/).+?(?=\")", text))
@@ -116,7 +133,14 @@ class Scrapper:
 
         internal_urls = {"https://" + domain + path for path in relative_paths}
 
-        return urls | internal_urls
+        combined_urls = urls | internal_urls
+
+        return {
+            url
+            for url in combined_urls
+            for disallowed_path in self.disallowed_paths
+            if disallowed_path not in url
+        }
 
     def retrieve_content(self, text):
         p = re.compile(
@@ -253,6 +277,7 @@ class Scrapper:
 
         url_queue = deque()
         total_visited_pages = set()
+        self.retrieve_disallowed_paths()
 
         for url in self.urls:
             url_queue.append(f"https://{url}")
@@ -337,7 +362,9 @@ class Vectorizer:
 
         for _id in document_ids:
             document_bow = eval(
-                self.db_controller.select_row_by_id(*_id, self.table_name, columns=["bow"])[0]
+                self.db_controller.select_row_by_id(
+                    *_id, self.table_name, columns=["bow"]
+                )[0]
             )
 
             for word, value in zip(self.bag_of_words, document_bow):
@@ -363,10 +390,14 @@ class Vectorizer:
         # Generate bow and tf vectors
         for _id in document_ids:
             document_words = eval(
-                self.db_controller.select_row_by_id(*_id, self.table_name, columns=["words"])[0]
+                self.db_controller.select_row_by_id(
+                    *_id, self.table_name, columns=["words"]
+                )[0]
             )
-            document_bow_vector = self.generate_bow_vector(document_words)            
-            document_tf_vector = self.generate_tf_vector(document_bow_vector, document_words)
+            document_bow_vector = self.generate_bow_vector(document_words)
+            document_tf_vector = self.generate_tf_vector(
+                document_bow_vector, document_words
+            )
 
             self.db_controller.update_columns_by_id(
                 *_id,
@@ -381,7 +412,9 @@ class Vectorizer:
 
         for _id in document_ids:
             document_tf_vector = eval(
-                self.db_controller.select_row_by_id(*_id, self.table_name, columns=["tf"])[0]
+                self.db_controller.select_row_by_id(
+                    *_id, self.table_name, columns=["tf"]
+                )[0]
             )
 
             tf_idf_vector = self.generate_tf_idf_vector(document_tf_vector)
@@ -391,4 +424,3 @@ class Vectorizer:
                 self.table_name,
                 columns={"tfidf": str(tf_idf_vector)},
             )
-            
